@@ -1,5 +1,3 @@
-// src/pages/DashboardPage_MUI.jsx (Com CardActions para resolver conflito de foco)
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
@@ -8,6 +6,8 @@ import {
   Grid, Typography, Chip, IconButton, Dialog,
   DialogActions, DialogContent, DialogContentText, DialogTitle, Button, Tooltip
 } from '@mui/material';
+
+// Ícones
 import AddIcon from '@mui/icons-material/Add';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -15,9 +15,9 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import EditIcon from '@mui/icons-material/Edit';
 import ErrorIcon from '@mui/icons-material/Error';
 import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility'; // Ícone para "Ver"
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import MenuBookIcon from '@mui/icons-material/MenuBook'; // Ícone do Caderno
 
-// <<< O COMPONENTE PmoCard FOI REESCRITO PARA SER MAIS SIMPLES E ROBUSTO >>>
 const PmoCard = ({ pmo, onDelete }) => {
   const navigate = useNavigate();
   
@@ -30,7 +30,7 @@ const PmoCard = ({ pmo, onDelete }) => {
   const currentStatus = statusConfig[pmo.status] || statusConfig['RASCUNHO'];
 
   return (
-    <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+    <Grid item xs={12} sm={6} md={4} lg={3}>
       <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <CardContent sx={{ flexGrow: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -50,18 +50,33 @@ const PmoCard = ({ pmo, onDelete }) => {
           </Typography>
         </CardContent>
         
-        {/* <<< AQUI ESTÁ A MUDANÇA: UMA BARRA DE AÇÕES EXPLÍCITA >>> */}
-        <CardActions sx={{ justifyContent: 'flex-end' }}>
-            <Tooltip title="Ver Detalhes">
+        {/* BARRA DE AÇÕES */}
+        <CardActions sx={{ justifyContent: 'flex-end', borderTop: '1px solid #eee' }}>
+            
+            {/* --- BOTÃO ESPECIAL: CADERNO DE CAMPO --- */}
+            <Tooltip title="Abrir Caderno de Campo Digital">
+                <IconButton 
+                  size="small" 
+                  color="success" 
+                  // AQUI ESTÁ A MUDANÇA: Passamos o parâmetro ?aba=caderno
+                  onClick={() => navigate(`/pmo/${pmo.id}/editar?aba=caderno`)}
+                >
+                    <MenuBookIcon />
+                </IconButton>
+            </Tooltip>
+            
+            <Tooltip title="Ver Detalhes (Leitura)">
                 <IconButton size="small" onClick={() => navigate(`/pmo/${pmo.id}`)}>
                     <VisibilityIcon />
                 </IconButton>
             </Tooltip>
-            <Tooltip title="Editar">
-                <IconButton size="small" onClick={() => navigate(`/pmo/${pmo.id}/editar`)}>
+            
+            <Tooltip title="Editar PMO">
+                <IconButton size="small" color="primary" onClick={() => navigate(`/pmo/${pmo.id}/editar`)}>
                     <EditIcon />
                 </IconButton>
             </Tooltip>
+            
             <Tooltip title="Excluir">
                 <IconButton size="small" color="error" onClick={() => onDelete(pmo)}>
                     <DeleteIcon />
@@ -72,7 +87,6 @@ const PmoCard = ({ pmo, onDelete }) => {
     </Grid>
   );
 };
-
 
 function DashboardPageMUI() {
   const [pmos, setPmos] = useState([]);

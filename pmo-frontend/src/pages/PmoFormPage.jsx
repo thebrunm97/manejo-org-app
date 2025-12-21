@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+// ADICIONADO: useLocation para ler a URL
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { initialFormData } from '../utils/formData';
 import { deepMerge } from '../utils/deepMerge';
@@ -12,13 +13,17 @@ import {
     Paper, Snackbar 
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import KeyboardArrowLeft from '@mui/icons-material/KeyboardArrowLeft';
-import KeyboardArrowRight from '@mui/icons-material/KeyboardArrowRight';
 
+// Componentes do Formulário
 import DesktopStepperMUI from '../components/PmoForm/DesktopStepper_MUI.jsx';
 import StepperNavigationMUI from '../components/PmoForm/StepperNavigation_MUI.jsx';
 import MobileBottomNav from '../components/PmoForm/MobileBottomNav.jsx';
 import SectionsModal from '../components/PmoForm/SectionsModal.jsx';
+
+// Importação do Caderno de Campo
+import DiarioDeCampo from '../components/DiarioDeCampo';
+
+// Seções do PMO
 import Secao1MUI from '../components/PmoForm/Secao1_MUI.jsx';
 import Secao2MUI from '../components/PmoForm/Secao2_MUI.jsx';
 import Secao3MUI from '../components/PmoForm/Secao3_MUI.jsx';
@@ -116,7 +121,9 @@ const cleanFormDataForSubmission = (data) => {
 
 function PmoFormPage() {
     const navigate = useNavigate();
-    const { pmoId } = useParams(); // pmoId da URL
+    const { pmoId } = useParams();
+    // 1. INICIALIZA LOCATION
+    const location = useLocation();
 
     const [isEditMode, setIsEditMode] = useState(false);
     const [editablePmoId, setEditablePmoId] = useState(null);
@@ -153,10 +160,20 @@ function PmoFormPage() {
         { id: 15, key: 'secao_15_rastreabilidade', Component: Secao15MUI, validate: validations.validateSecao15, label: 'Rastreio' },
         { id: 16, key: 'secao_16_sac', Component: Secao16MUI, validate: validations.validateSecao16, label: 'SAC' },
         { id: 17, key: 'secao_17_opiniao', Component: Secao17MUI, validate: validations.validateSecao17, label: 'Opinião' },
-        { id: 18, key: 'secao_18_anexos', Component: Secao18MUI, validate: validations.validateSecao18, label: 'Anexos' }
+        { id: 18, key: 'secao_18_anexos', Component: Secao18MUI, validate: validations.validateSecao18, label: 'Anexos' },
+        // Seção 19: Caderno de Campo
+        { id: 19, key: 'caderno_de_campo', Component: DiarioDeCampo, validate: () => true, label: 'Caderno de Campo' }
     ], []);
 
     const totalSteps = formSections.length;
+
+    // 2. EFEITO MÁGICO: Verifica se deve pular para o Caderno
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        if (params.get('aba') === 'caderno') {
+            setCurrentStep(19);
+        }
+    }, [location.search]);
 
     const syncOfflineData = useCallback(async () => {
         if (!navigator.onLine) return;
@@ -320,7 +337,7 @@ function PmoFormPage() {
     };
 
     const handleCancelExit = () => setConfirmExitOpen(false);
-       
+        
     const currentSectionConfig = formSections.find(sec => sec.id === currentStep);
 
     if (isLoading) return <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><Typography>Carregando...</Typography></Box>;
@@ -382,7 +399,8 @@ function PmoFormPage() {
                             key={currentSectionConfig.key} 
                             data={formData[currentSectionConfig.key]} 
                             onSectionChange={(newData) => handleSectionChange(currentSectionConfig.key, newData)} 
-                            errors={errors[currentSectionConfig.key]} 
+                            errors={errors[currentSectionConfig.key]}
+                            pmoId={editablePmoId} // Passando ID para o Caderno
                         />
                     )}
                     
@@ -446,4 +464,3 @@ function PmoFormPage() {
 }
 
 export default PmoFormPage;
-// ATUALIZACAO FINAL NETLIFY
