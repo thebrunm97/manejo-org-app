@@ -1,11 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabaseClient';
-import { Chip, Tooltip } from '@mui/material'; // Usaremos componentes visuais
-import ScienceIcon from '@mui/icons-material/Science'; // Ícone de "Química/Receita"
+import { CircularProgress, Menu, MenuItem } from '@mui/material';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ScienceIcon from '@mui/icons-material/Science';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 const DiarioDeCampo = ({ pmoId }) => {
+  // INICIALIZAÇÃO SEGURA: Começa sempre como array vazio []
   const [registros, setRegistros] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [filtrosAtivos, setFiltrosAtivos] = useState({
+    data_registro: 'Todos',
+    tipo_atividade: 'Todos',
+    produto: 'Todos'
+  });
+
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [colunaAtiva, setColunaAtiva] = useState(null);
 
   useEffect(() => {
     if (pmoId) fetchRegistros();
@@ -14,122 +26,149 @@ const DiarioDeCampo = ({ pmoId }) => {
   const fetchRegistros = async () => {
     try {
       setLoading(true);
-      let query = supabase
+      const { data, error } = await supabase
         .from('caderno_campo')
         .select('*')
+        .eq('pmo_id', pmoId)
         .order('data_registro', { ascending: false });
 
-      if (pmoId) {
-        query = query.eq('pmo_id', pmoId);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
-      setRegistros(data);
+      // TRAVA DE SEGURANÇA 1: Garante que nunca seja null/undefined
+      setRegistros(data || []);
     } catch (error) {
       console.error('Erro:', error.message);
+      setRegistros([]); // Em caso de erro, define como array vazio para não quebrar o .map
     } finally {
       setLoading(false);
     }
   };
 
-  const formatarData = (dataISO) => {
-    if (!dataISO) return '-';
-    return new Date(dataISO).toLocaleDateString('pt-BR', {
-      day: '2-digit', month: '2-digit', year: 'numeric'
-    });
+  const abrirFiltro = (event, coluna) => {
+    setAnchorEl(event.currentTarget);
+    setColunaAtiva(coluna);
   };
 
-  // Função para renderizar os detalhes técnicos bonitinhos
-  const renderDetalhes = (reg) => {
-    // Se tiver detalhes técnicos salvos em JSON
-    if (reg.detalhes_tecnicos && typeof reg.detalhes_tecnicos === 'object') {
-      const { composicao, origem, obs } = reg.detalhes_tecnicos;
-      
-      return (
-        <div className="flex flex-col gap-1">
-          {composicao && (
-            <div className="text-xs text-gray-700 bg-green-50 p-1 rounded border border-green-100">
-               <strong>🧪 Receita:</strong> {composicao}
-            </div>
-          )}
-          {origem && (
-            <span className="text-xs text-gray-500">Origem: {origem}</span>
-          )}
-          {/* Se não tiver JSON, mostra a observação antiga */}
-          {!composicao && !origem && <span className="text-xs italic">{reg.observacao_original}</span>}
-        </div>
-      );
+  const fecharFiltro = (valor) => {
+    if (valor) {
+      setFiltrosAtivos(prev => ({ ...prev, [colunaAtiva]: valor }));
     }
-    // Fallback para texto simples
-    return <span className="text-sm text-gray-500">{reg.observacao_original}</span>;
+    setAnchorEl(null);
+    setColunaAtiva(null);
+  };
+
+  // TRAVA DE SEGURANÇA 2: Uso de ?. e || [] no filter
+  const registrosFiltrados = (registros || []).filter(reg => {
+    if (!reg) return false; // Ignora registros inválidos
+    const dataFormatada = reg.data_registro ? new Date(reg.data_registro).toLocaleDateString('pt-BR') : '-';
+    
+    const matchData = filtrosAtivos.data_registro === 'Todos' || dataFormatada === filtrosAtivos.data_registro;
+    const matchTipo = filtrosAtivos.tipo_atividade === 'Todos' || reg.tipo_atividade === filtrosAtivos.tipo_atividade;
+    const matchProduto = filtrosAtivos.produto === 'Todos' || reg.produto === filtrosAtivos.produto;
+    return matchData && matchTipo && matchProduto;
+  });
+
+  // TRAVA DE SEGURANÇA 3: Proteção na geração das opções do menu
+  const obterOpcoesunicas = (coluna) => {
+    if (!registros || registros.length === 0) return ['Todos'];
+
+    if (coluna === 'data_registro') {
+      const datas = registros.map(r => r.data_registro ? new Date(r.data_registro).toLocaleDateString('pt-BR') : '-');
+      return ['Todos', ...new Set(datas)];
+    }
+    
+    // Proteção contra campo undefined
+    const valores = registros.map(r => r[coluna] || '-');
+    return ['Todos', ...new Set(valores)];
   };
 
   return (
-    <div className="mt-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="mt-6 w-full">
+      <div className="flex justify-between items-center mb-4 px-2">
         <h3 className="text-xl font-bold text-gray-700 flex items-center gap-2">
           📒 Caderno de Campo Digital
         </h3>
+        
         <button 
-          onClick={fetchRegistros}
-          className="text-sm text-green-600 hover:text-green-800 underline font-medium"
+          type="button" 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation(); 
+            fetchRegistros();
+          }}
+          className="flex items-center gap-1 text-sm text-green-700 font-medium hover:bg-green-50 px-3 py-1 rounded border border-green-200 transition-all"
         >
-          🔄 Atualizar Lista
+          <RefreshIcon sx={{ fontSize: 18 }} /> Atualizar Lista
         </button>
       </div>
-      
-      {loading ? (
-        <p className="text-gray-500 text-center py-10">Carregando registros do campo...</p>
-      ) : (
-        <div className="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
+
+      <div className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Data</th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Atividade</th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Produto</th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Local/Qtd</th>
-                <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/3">Detalhes Técnicos</th>
+            <thead className="bg-gray-100">
+              <tr className="text-gray-600 text-[11px] font-bold uppercase tracking-wider">
+                <th className="px-4 py-3 text-left">
+                  <div className="flex items-center cursor-pointer hover:text-green-700" onClick={(e) => abrirFiltro(e, 'data_registro')}>
+                    Data <ArrowDropDownIcon fontSize="small" />
+                    {filtrosAtivos.data_registro !== 'Todos' && <span className="ml-1 text-[9px] bg-green-200 px-1 rounded">●</span>}
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <div className="flex items-center cursor-pointer hover:text-green-700" onClick={(e) => abrirFiltro(e, 'tipo_atividade')}>
+                    Atividade <ArrowDropDownIcon fontSize="small" />
+                    {filtrosAtivos.tipo_atividade !== 'Todos' && <span className="ml-1 text-[9px] bg-green-200 px-1 rounded">●</span>}
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left">
+                  <div className="flex items-center cursor-pointer hover:text-green-700" onClick={(e) => abrirFiltro(e, 'produto')}>
+                    Produto <ArrowDropDownIcon fontSize="small" />
+                    {filtrosAtivos.produto !== 'Todos' && <span className="ml-1 text-[9px] bg-green-200 px-1 rounded">●</span>}
+                  </div>
+                </th>
+                <th className="px-4 py-3 text-left">Local/Qtd</th>
+                <th className="px-4 py-3 text-left w-1/3">Detalhes Técnicos</th>
               </tr>
             </thead>
+            
             <tbody className="bg-white divide-y divide-gray-200">
-              {registros.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-400">
-                    <p className="text-lg">Nenhum registro ainda.</p>
-                    <p className="text-sm mt-2">Envie um áudio no WhatsApp: <em>"Preparei biofertilizante com..."</em></p>
-                  </td>
-                </tr>
+              {loading ? (
+                <tr><td colSpan="5" className="py-20 text-center"><CircularProgress size={30} /></td></tr>
+              ) : (!registrosFiltrados || registrosFiltrados.length === 0) ? ( // TRAVA DE SEGURANÇA 4
+                <tr><td colSpan="5" className="py-20 text-center text-gray-400 font-medium">Nenhum registro encontrado.</td></tr>
               ) : (
-                registros.map((reg) => (
-                  <tr key={reg.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium">
-                      {formatarData(reg.data_registro)}
+                registrosFiltrados.map((reg) => (
+                  <tr key={reg.id || Math.random()} className="hover:bg-gray-50 transition-colors text-sm">
+                    <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
+                      {reg.data_registro ? new Date(reg.data_registro).toLocaleDateString('pt-BR') : '-'}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${reg.tipo_atividade === 'Colheita' ? 'bg-green-100 text-green-800' : 
-                          ['Insumo', 'Adubação'].includes(reg.tipo_atividade) ? 'bg-yellow-100 text-yellow-800' : 
-                          'bg-blue-100 text-blue-800'}`}>
-                        {reg.tipo_atividade}
+                      <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full 
+                        ${reg.tipo_atividade === 'Colheita' ? 'bg-orange-100 text-orange-800' : 
+                          reg.tipo_atividade === 'Insumo' ? 'bg-blue-100 text-blue-800' : 
+                          reg.tipo_atividade === 'Plantio' ? 'bg-green-100 text-green-800' : 
+                          'bg-purple-100 text-purple-800'}`}>
+                        {reg.tipo_atividade || 'Outro'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-medium">
-                        {reg.produto}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                      <div className="flex flex-col">
-                        <span>📍 {reg.talhao_canteiro || '-'}</span>
+                    <td className="px-4 py-3 font-bold uppercase text-gray-800">{reg.produto || '-'}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-gray-600">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="flex items-center gap-1">📍 {reg.talhao_canteiro || '-'}</span>
                         {reg.quantidade_valor > 0 && (
-                            <span className="font-bold text-gray-800">
-                                ⚖️ {reg.quantidade_valor} {reg.quantidade_unidade}
-                            </span>
+                          <span className="font-bold text-gray-800 text-[12px]">⚖️ {reg.quantidade_valor} {reg.quantidade_unidade}</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 align-top">
-                      {renderDetalhes(reg)}
+                    <td className="px-4 py-3 text-gray-600">
+                      {reg.detalhes_tecnicos?.receita || reg.detalhes_tecnicos?.composicao ? (
+                        <div className="text-xs bg-green-50 p-2 rounded border border-green-100">
+                          <strong className="flex items-center gap-1 text-green-700">
+                            <ScienceIcon sx={{ fontSize: 14 }} /> Receita:
+                          </strong>
+                          {reg.detalhes_tecnicos.receita || reg.detalhes_tecnicos.composicao}
+                        </div>
+                      ) : (
+                        <span className="text-xs italic text-gray-400">{reg.observacao_original || ''}</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -137,7 +176,25 @@ const DiarioDeCampo = ({ pmoId }) => {
             </tbody>
           </table>
         </div>
-      )}
+      </div>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => fecharFiltro()}
+        PaperProps={{ style: { maxHeight: 300, width: '20ch' } }}
+      >
+        {colunaAtiva && obterOpcoesunicas(colunaAtiva).map((opcao) => (
+          <MenuItem 
+            key={opcao} 
+            selected={filtrosAtivos[colunaAtiva] === opcao}
+            onClick={() => fecharFiltro(opcao)}
+            sx={{ fontSize: '12px' }}
+          >
+            {opcao}
+          </MenuItem>
+        ))}
+      </Menu>
     </div>
   );
 };

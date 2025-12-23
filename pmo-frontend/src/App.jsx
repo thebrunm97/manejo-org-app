@@ -3,14 +3,20 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
-import MainLayout from './components/MainLayout';
+
+// Layout
+import DashboardLayout from './components/DashboardLayout';
+
+// Páginas
 import DashboardPageMUI from './pages/DashboardPage_MUI';
 import PmoFormPage from './pages/PmoFormPage';
 import PmoDetailPageMUI from './pages/PmoDetailPage_MUI';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-// 1. Importar o novo componente do Caderno de Campo
 import DiarioDeCampo from './components/DiarioDeCampo';
+
+// 1. IMPORTAÇÃO DA NOVA PÁGINA DE LISTAGEM
+import PlanosManejoList from './pages/PlanosManejoList';
 
 function App() {
   return (
@@ -19,32 +25,76 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<SignUpPage />} />
 
-      {/* Rotas Protegidas */}
+      {/* Rotas Protegidas - Agora usando DashboardLayout */}
+      
+      {/* Rota 1: Dashboard Principal (Visão Geral) */}
       <Route 
         path="/" 
-        element={<ProtectedRoute><MainLayout><DashboardPageMUI /></MainLayout></ProtectedRoute>} 
+        element={
+            <ProtectedRoute>
+                <DashboardLayout>
+                    <DashboardPageMUI />
+                </DashboardLayout>
+            </ProtectedRoute>
+        } 
       />
+
+      {/* Rota 2: Listagem de Planos (NOVA ROTA) */}
+      <Route 
+        path="/planos" 
+        element={
+            <ProtectedRoute>
+                <DashboardLayout>
+                    <PlanosManejoList />
+                </DashboardLayout>
+            </ProtectedRoute>
+        } 
+      />
+
+      {/* Rota 3: Criar Novo Plano */}
       <Route 
         path="/pmo/novo" 
-        element={<ProtectedRoute><MainLayout><PmoFormPage /></MainLayout></ProtectedRoute>} 
+        element={
+            <ProtectedRoute>
+                <DashboardLayout>
+                    <PmoFormPage />
+                </DashboardLayout>
+            </ProtectedRoute>
+        } 
       />
+
+      {/* Rota 4: Editar Plano Existente */}
       <Route 
         path="/pmo/:pmoId/editar" 
-        element={<ProtectedRoute><MainLayout><PmoFormPage /></MainLayout></ProtectedRoute>} 
+        element={
+            <ProtectedRoute>
+                <DashboardLayout>
+                    <PmoFormPage />
+                </DashboardLayout>
+            </ProtectedRoute>
+        } 
       />
+
+      {/* Rota 5: Detalhes do Plano */}
       <Route 
         path="/pmo/:pmoId" 
-        element={<ProtectedRoute><MainLayout><PmoDetailPageMUI /></MainLayout></ProtectedRoute>} 
+        element={
+            <ProtectedRoute>
+                <DashboardLayout>
+                    <PmoDetailPageMUI />
+                </DashboardLayout>
+            </ProtectedRoute>
+        } 
       />
       
-      {/* 2. Nova Rota Protegida para o Caderno de Campo Digital */}
+      {/* Rota 6: Caderno de Campo (Diário) */}
       <Route 
         path="/caderno" 
         element={
           <ProtectedRoute>
-            <MainLayout>
+            <DashboardLayout>
               <DiarioDeCampo />
-            </MainLayout>
+            </DashboardLayout>
           </ProtectedRoute>
         } 
       />

@@ -398,6 +398,7 @@ function PmoFormPage() {
                         <currentSectionConfig.Component 
                             key={currentSectionConfig.key} 
                             data={formData[currentSectionConfig.key]} 
+                            formData={formData} 
                             onSectionChange={(newData) => handleSectionChange(currentSectionConfig.key, newData)} 
                             errors={errors[currentSectionConfig.key]}
                             pmoId={editablePmoId} // Passando ID para o Caderno

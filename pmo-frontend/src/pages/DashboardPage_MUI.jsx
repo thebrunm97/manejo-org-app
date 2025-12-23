@@ -1,190 +1,272 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
+
+// IMPORTAÇÃO PADRÃO DO GRID (Funciona em qualquer versão do MUI)
 import {
-  Box, Fab, Card, CardActions, CardContent, CircularProgress,
-  Grid, Typography, Chip, IconButton, Dialog,
-  DialogActions, DialogContent, DialogContentText, DialogTitle, Button, Tooltip
+  Box, Typography, Paper, Button, Chip, Grid
 } from '@mui/material';
 
-// Ícones
-import AddIcon from '@mui/icons-material/Add';
-import DescriptionIcon from '@mui/icons-material/Description';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import EditIcon from '@mui/icons-material/Edit';
-import ErrorIcon from '@mui/icons-material/Error';
-import DeleteIcon from '@mui/icons-material/Delete';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import MenuBookIcon from '@mui/icons-material/MenuBook'; // Ícone do Caderno
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip 
+} from 'recharts';
 
-const PmoCard = ({ pmo, onDelete }) => {
-  const navigate = useNavigate();
-  
-  const statusConfig = {
-    'RASCUNHO': { label: 'Rascunho', color: 'default', icon: <EditIcon fontSize="inherit" /> },
-    'CONCLUÍDO': { label: 'Concluído', color: 'info', icon: <HourglassEmptyIcon fontSize="inherit" /> },
-    'APROVADO': { label: 'Aprovado', color: 'success', icon: <CheckCircleIcon fontSize="inherit" /> },
-    'REPROVADO': { label: 'Reprovado', color: 'error', icon: <ErrorIcon fontSize="inherit" /> },
-  };
-  const currentStatus = statusConfig[pmo.status] || statusConfig['RASCUNHO'];
+import HarvestDashboard from '../components/Dashboard/HarvestDashboard';
+import GeneralLogTable from '../components/Dashboard/GeneralLogTable';
 
-  return (
-    <Grid item xs={12} sm={6} md={4} lg={3}>
-      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <CardContent sx={{ flexGrow: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <DescriptionIcon color="action" sx={{ mr: 1.5, fontSize: 40 }} />
-            <Box>
-              <Typography variant="h6" component="h2" noWrap title={pmo.nome_identificador}>
-                {pmo.nome_identificador}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Versão: {pmo.version || '1'}
-              </Typography>
-            </Box>
-          </Box>
-          <Chip icon={currentStatus.icon} label={currentStatus.label} color={currentStatus.color} size="small" />
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-            Criado em: {new Date(pmo.created_at).toLocaleDateString('pt-BR')}
-          </Typography>
-        </CardContent>
-        
-        {/* BARRA DE AÇÕES */}
-        <CardActions sx={{ justifyContent: 'flex-end', borderTop: '1px solid #eee' }}>
-            
-            {/* --- BOTÃO ESPECIAL: CADERNO DE CAMPO --- */}
-            <Tooltip title="Abrir Caderno de Campo Digital">
-                <IconButton 
-                  size="small" 
-                  color="success" 
-                  // AQUI ESTÁ A MUDANÇA: Passamos o parâmetro ?aba=caderno
-                  onClick={() => navigate(`/pmo/${pmo.id}/editar?aba=caderno`)}
-                >
-                    <MenuBookIcon />
-                </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Ver Detalhes (Leitura)">
-                <IconButton size="small" onClick={() => navigate(`/pmo/${pmo.id}`)}>
-                    <VisibilityIcon />
-                </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Editar PMO">
-                <IconButton size="small" color="primary" onClick={() => navigate(`/pmo/${pmo.id}/editar`)}>
-                    <EditIcon />
-                </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Excluir">
-                <IconButton size="small" color="error" onClick={() => onDelete(pmo)}>
-                    <DeleteIcon />
-                </IconButton>
-            </Tooltip>
-        </CardActions>
-      </Card>
-    </Grid>
-  );
+import { 
+  Sprout, ArrowRight, Leaf, Plus, MessageCircle, Settings, Smartphone
+} from 'lucide-react';
+
+// --- ESTILO "AGRO SAAS" ---
+const cardStyle = {
+  borderRadius: '24px',
+  boxShadow: '0px 10px 30px rgba(0,0,0,0.04)',
+  border: '1px solid rgba(255,255,255,0.6)',
+  bgcolor: '#ffffff',
+  height: '100%',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  transition: 'transform 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: '0px 20px 40px rgba(0,0,0,0.06)',
+  }
 };
 
-function DashboardPageMUI() {
-  const [pmos, setPmos] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
+const chartData = [
+  { name: 'Área Produtiva', value: 65, color: '#16a34a' },
+  { name: 'Em descanso', value: 20, color: '#eab308' },
+  { name: 'Reserva', value: 15, color: '#94a3b8' },
+];
 
-  const [isDialogOpen, setDialogOpen] = useState(false);
-  const [pmoToDelete, setPmoToDelete] = useState(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+function DashboardPageMUI() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+  const [pmoAtivo, setPmoAtivo] = useState(null);
+  
+  const hoje = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   useEffect(() => {
-    const handleListPmos = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.from('pmos').select('*').order('created_at', { ascending: false });
-        if (error) throw error;
-        setPmos(data);
-      } catch (err) { console.error("Erro ao buscar PMOs:", err.message); } 
-      finally { setIsLoading(false); }
-    };
-    handleListPmos();
-  }, []);
+    const fetchData = async () => {
+      if (user) {
+        try {
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            setProfile(profileData);
 
-  const openDeleteDialog = (pmo) => {
-    setPmoToDelete(pmo);
-    setDialogOpen(true);
-  };
-
-  const closeDeleteDialog = () => {
-    setPmoToDelete(null);
-    setDialogOpen(false);
-  };
-
-  const handleDeletePmo = async () => {
-    if (!pmoToDelete) return;
-    setIsDeleting(true);
-
-    try {
-      const anexos = pmoToDelete.form_data?.secao_18_anexos?.lista_anexos || [];
-      if (anexos.length > 0) {
-        const filePaths = anexos.map(anexo => anexo.path_arquivo);
-        const { error: storageError } = await supabase.storage.from('anexos-pmos').remove(filePaths);
-        if (storageError) console.error("Aviso: Falha ao deletar alguns anexos no storage.", storageError);
+            if (profileData?.pmo_ativo_id) {
+                const { data: pmoData } = await supabase
+                    .from('pmos')
+                    .select('nome_identificador, version')
+                    .eq('id', profileData.pmo_ativo_id)
+                    .single();
+                setPmoAtivo(pmoData);
+            }
+        } catch (error) {
+            console.error("Erro ao carregar dados do dashboard:", error);
+        }
       }
+    };
+    fetchData();
+  }, [user]);
 
-      const { error: dbError } = await supabase.from('pmos').delete().eq('id', pmoToDelete.id);
-      if (dbError) throw dbError;
-
-      setPmos(currentPmos => currentPmos.filter(p => p.id !== pmoToDelete.id));
-
-    } catch (err) {
-      console.error("Erro ao excluir o PMO:", err.message);
-    } finally {
-      setIsDeleting(false);
-      closeDeleteDialog();
+  const formatarTelefone = (telefoneFull) => {
+    if (!telefoneFull) return null;
+    const numeroLimpo = telefoneFull.split('@')[0];
+    if (numeroLimpo.length > 4) {
+        const ultimosDigitos = numeroLimpo.slice(-4);
+        return `Conta final ****-${ultimosDigitos}`;
     }
+    return "Conta Vinculada";
   };
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-        <Typography variant="h4" component="h1">Meus Planos de Manejo</Typography>
-      </Box>
-
-      <Box>
-        {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}><CircularProgress /></Box>
-        ) : pmos.length > 0 ? (
-          <Grid container spacing={3}>
-            {pmos.map(pmo => (
-              <PmoCard key={pmo.id} pmo={pmo} onDelete={openDeleteDialog} />
-            ))}
-          </Grid>
-        ) : (
-          <Typography sx={{ mt: 4, textAlign: 'center' }}>Nenhum Plano de Manejo encontrado.</Typography>
-        )}
-      </Box>
+    <Box sx={{ pb: 8 }}>
       
-      <Fab color="primary" aria-label="adicionar pmo" onClick={() => navigate('/pmo/novo')} sx={{ position: 'fixed', bottom: 32, right: 32 }}>
-        <AddIcon />
-      </Fab>
+      {/* 1. CABEÇALHO */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', mb: 4 }}>
+        <Box>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-1px', mb: 0.5 }}>
+                Olá, {user?.email?.split('@')[0]}! 🚜
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748b', fontSize: '1rem' }}>
+                Resumo da produção em <span style={{textTransform: 'capitalize', fontWeight: 600}}>{hoje}</span>.
+            </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button 
+                variant="outlined" 
+                startIcon={<Settings size={18} />}
+                onClick={() => navigate('/planos')}
+                sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 600, borderColor: '#cbd5e1', color: '#475569' }}
+            >
+                Gerenciar Planos
+            </Button>
+            <Button 
+                variant="contained" 
+                startIcon={<Plus size={20} />}
+                onClick={() => navigate('/caderno')}
+                sx={{ 
+                    bgcolor: '#16a34a', color: 'white', borderRadius: '12px', px: 3, py: 1,
+                    textTransform: 'none', fontWeight: 600, boxShadow: '0 4px 14px rgba(22, 163, 74, 0.4)'
+                }}
+            >
+                Novo Registro
+            </Button>
+        </Box>
+      </Box>
 
-      <Dialog open={isDialogOpen} onClose={closeDeleteDialog}>
-        <DialogTitle>Confirmar Exclusão</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Tem certeza que deseja excluir o plano "<strong>{pmoToDelete?.nome_identificador}</strong>"?
-            <br />
-            Esta ação não pode ser desfeita. Todos os dados e anexos associados serão permanentemente removidos.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeDeleteDialog} disabled={isDeleting}>Cancelar</Button>
-          <Button onClick={handleDeletePmo} color="error" disabled={isDeleting}>
-            {isDeleting ? <CircularProgress size={22} /> : 'Excluir'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* 2. GRID DE WIDGETS (USANDO GRID CLÁSSICO - ITEM/CONTAINER) */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        
+        {/* WIDGET 1: WHATSAPP */}
+        <Grid item xs={12} md={4}>
+            <Paper sx={{ ...cardStyle, p: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Box sx={{ p: 1.5, bgcolor: profile?.telefone ? '#dcfce7' : '#f1f5f9', borderRadius: '14px', color: profile?.telefone ? '#16a34a' : '#64748b' }}>
+                        <Smartphone size={24} />
+                    </Box>
+                    <Chip 
+                        label={profile?.telefone ? "ATIVO" : "OFFLINE"} 
+                        color={profile?.telefone ? "success" : "default"} 
+                        size="small" 
+                        sx={{ fontWeight: 700, borderRadius: 2 }} 
+                    />
+                </Box>
+                <Typography variant="h6" fontWeight={700} color="#0f172a">Assistente IA</Typography>
+                
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, flex: 1 }}>
+                    {profile?.telefone 
+                        ? formatarTelefone(profile.telefone)
+                        : "Vincule seu WhatsApp para enviar áudios."}
+                </Typography>
+                
+                {!profile?.telefone && (
+                     <Button variant="outlined" fullWidth size="small" color="success" onClick={() => navigate('/planos')} sx={{ borderRadius: 3 }}>
+                        Vincular Agora
+                     </Button>
+                )}
+            </Paper>
+        </Grid>
+
+        {/* WIDGET 2: PLANO ATIVO */}
+        <Grid item xs={12} md={4}>
+            <Paper sx={{ ...cardStyle, p: 3, bgcolor: '#0f172a', color: 'white' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                    <Box sx={{ p: 1.5, bgcolor: 'rgba(255,255,255,0.1)', borderRadius: '14px' }}>
+                        <Leaf size={24} color="#4ade80" />
+                    </Box>
+                    <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>PLANO ATUAL</Typography>
+                </Box>
+                
+                {pmoAtivo ? (
+                    <>
+                        <Typography variant="h5" fontWeight={700} noWrap>{pmoAtivo.nome_identificador}</Typography>
+                        <Typography variant="body2" sx={{ color: '#94a3b8', mb: 3, flex: 1 }}>Versão {pmoAtivo.version || 1} • Em andamento</Typography>
+                        <Button variant="contained" size="small" onClick={() => navigate('/caderno')} sx={{ bgcolor: '#4ade80', color: '#064e3b', borderRadius: 3, fontWeight: 700 }}>
+                            Ver Caderno
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Typography variant="h6">Nenhum plano ativo</Typography>
+                        <Button onClick={() => navigate('/planos')} sx={{ color: '#4ade80', mt: 2 }}>Selecionar Plano</Button>
+                    </>
+                )}
+            </Paper>
+        </Grid>
+
+       {/* WIDGET 3: GRÁFICO OTIMIZADO */}
+        <Grid item xs={12} md={4}>
+            <Paper sx={{ 
+                ...cardStyle, 
+                p: 3, 
+                display: 'flex', 
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                minHeight: 300 // Garante altura mínima para não achatar
+            }}>
+                <Typography variant="subtitle2" fontWeight={700} color="#0f172a">
+                    Uso da Terra
+                </Typography>
+                
+                {/* Container flexível que ocupa todo o espaço restante */}
+                <Box sx={{ flexGrow: 1, width: '100%', minHeight: 200, mt: 2 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 0, left: 0, right: 0, bottom: 0 }}>
+                            <Pie 
+                                data={chartData} 
+                                cx="50%" 
+                                cy="50%" 
+                                // USAR PORCENTAGEM É O SEGREDO DA RESPONSIVIDADE
+                                innerRadius="60%" 
+                                outerRadius="85%" 
+                                paddingAngle={5} 
+                                dataKey="value"
+                                stroke="none" // Remove a borda branca dos fatias
+                            >
+                                {chartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <RechartsTooltip 
+                                contentStyle={{ 
+                                    backgroundColor: '#fff',
+                                    borderRadius: '12px', 
+                                    border: '1px solid #e2e8f0', 
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                    color: '#1e293b'
+                                }}
+                                itemStyle={{ color: '#1e293b', fontWeight: 600 }}
+                            />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </Box>
+                
+                {/* Legenda Opcional para preencher espaço visual se necessário */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 1 }}>
+                    {chartData.map((entry, index) => (
+                        <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: entry.color }} />
+                            <Typography variant="caption" color="text.secondary">{entry.name}</Typography>
+                        </Box>
+                    ))}
+                </Box>
+            </Paper>
+        </Grid>
+
+      </Grid>
+
+      {/* 3. ÁREA DE DADOS REAIS */}
+      <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Sprout size={20} /> Produção em Tempo Real
+      </Typography>
+      
+      <Paper sx={{ ...cardStyle, p: 3, mb: 5 }}>
+         <HarvestDashboard pmoId={profile?.pmo_ativo_id} />
+      </Paper>
+
+      {/* 4. TABELA LOGS */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 1 }}>
+            <MessageCircle size={20} /> Últimas Atividades
+        </Typography>
+        <Button onClick={() => navigate('/caderno')} endIcon={<ArrowRight size={16} />} sx={{ textTransform: 'none', color: '#16a34a' }}>
+            Ver tudo
+        </Button>
+      </Box>
+
+      <Paper sx={{ ...cardStyle, p: 0, overflow: 'hidden', border: 'none' }}>
+         <GeneralLogTable pmoId={profile?.pmo_ativo_id} />
+      </Paper>
+
     </Box>
   );
 }

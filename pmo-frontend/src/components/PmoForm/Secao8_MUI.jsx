@@ -1,14 +1,14 @@
-// src/components/PmoForm/Secao8_MUI.jsx (Refatorado com Accordion)
+// src/components/PmoForm/Secao8_MUI.jsx (CORRIGIDO - SEM COMENTÁRIOS INLINE)
 
 import React from 'react';
-// <<< TAREFA 1: Importar componentes do Accordion e remover os de Card >>>
 import {
   Accordion, AccordionDetails, AccordionSummary, Box, TextField, Typography
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TabelaDinamicaMUI from './TabelaDinamica_MUI';
 
-function Secao8MUI({ data, onSectionChange }) {
+function Secao8MUI({ data, formData, onSectionChange }) {
+  const insumosFertilidade = formData?.insumos_melhorar_fertilidade || [];
   const safeData = data || {};
 
   const handleChange = (e) => {
@@ -30,21 +30,21 @@ function Secao8MUI({ data, onSectionChange }) {
   ];
 
   return (
-    // <<< TAREFA 1: A estrutura de Card foi substituída por um Box >>>
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Typography variant="h4" component="h2" sx={{ mb: 2, textAlign: 'left' }}>
         Seção 8: Insumos/Equipamentos
       </Typography>
 
-      {/* <<< TAREFA 2: Cada pergunta agora é um Accordion >>> */}
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontWeight: 'bold' }}>8.1. Quais insumos/manejos são utilizados para melhorar a fertilidade do sistema orgânico?</Typography>
+          <Typography sx={{ fontWeight: 'bold' }}>
+            8.1. Quais insumos/manejos são utilizados para melhorar a fertilidade do sistema orgânico?
+          </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <TabelaDinamicaMUI
             columns={columnsInsumosFertilidade}
-            data={safeData.insumos_melhorar_fertilidade}
+            data={insumosFertilidade}
             onDataChange={(newData) => onSectionChange({ ...safeData, insumos_melhorar_fertilidade: newData })}
             itemName="Insumo/Manejo"
             itemNoun="o"
@@ -54,7 +54,9 @@ function Secao8MUI({ data, onSectionChange }) {
 
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontWeight: 'bold' }}>8.2. Quais são os insumos utilizados na produção não orgânica?</Typography>
+          <Typography sx={{ fontWeight: 'bold' }}>
+            8.2. Quais são os insumos utilizados na produção não orgânica?
+          </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <TextField 
@@ -72,7 +74,9 @@ function Secao8MUI({ data, onSectionChange }) {
       
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography sx={{ fontWeight: 'bold' }}>8.3. Nos casos de produção paralela (produção orgânica e não orgânica), como são controlados os insumos e os equipamentos?</Typography>
+          <Typography sx={{ fontWeight: 'bold' }}>
+            8.3. Nos casos de produção paralela, como são controlados os insumos e os equipamentos?
+          </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <TextField 
@@ -87,7 +91,6 @@ function Secao8MUI({ data, onSectionChange }) {
           />
         </AccordionDetails>
       </Accordion>
-      
     </Box>
   );
 }
