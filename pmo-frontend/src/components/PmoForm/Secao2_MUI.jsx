@@ -1,8 +1,8 @@
 // src/components/PmoForm/Secao2_MUI.jsx (Com seletor de unidade para Área Plantada)
 
 import React, { useCallback } from 'react';
-import { 
-  Accordion, AccordionDetails, AccordionSummary, Box, Typography 
+import {
+  Accordion, AccordionDetails, AccordionSummary, Box, Typography
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import TabelaDinamicaMUI from './TabelaDinamica_MUI';
@@ -29,24 +29,24 @@ function Secao2MUI({ data, onSectionChange }) {
 
   const columnsVegetal = [
     { header: 'Produto', key: 'produto' },
-    { header: 'Talhões/Canteiros', key: 'talhoes_canteiros' },
+    { header: 'Local (Talhão + Espaço)', key: 'talhoes_canteiros', type: 'saf_visual' },
     { // <<< ALTERAÇÃO APLICADA AQUI >>>
-      header: 'Área Plantada', 
-      key: 'area_plantada', 
+      header: 'Área Plantada',
+      key: 'area_plantada',
       type: 'number',
-      unitSelector: { 
-        key: 'area_plantada_unidade', 
+      unitSelector: {
+        key: 'area_plantada_unidade',
         options: ['ha', 'm²']
       }
     },
-    { 
-      header: 'Produção Esperada/Ano', 
-      key: 'producao_esperada_ano', 
+    {
+      header: 'Produção Esperada/Ano',
+      key: 'producao_esperada_ano',
       type: 'number',
       unitSelector: { key: 'producao_unidade', options: ['kg', 'ton', 'cx'] }
     }
   ];
-  
+
   const columnsAnimal = [
     { header: 'Espécie', key: 'especie' },
     { header: 'Nº de animais', key: 'n_de_animais', type: 'number' },
@@ -55,20 +55,20 @@ function Secao2MUI({ data, onSectionChange }) {
     { header: 'Exploração', key: 'exploracao' },
     { header: 'Estágio de Vida', key: 'estagio_de_vida' },
     { header: 'Média de Peso Vivo', key: 'media_de_peso_vivo', type: 'number' },
-    { 
-      header: 'Produção Esperada/Ano', 
-      key: 'producao_esperada_ano', 
+    {
+      header: 'Produção Esperada/Ano',
+      key: 'producao_esperada_ano',
       type: 'text',
       unitSelector: { key: 'producao_unidade', options: ['kg', 'ton', 'L', 'dúzia'] }
     }
   ];
-  
+
   const columnsProcessamento = [
     { header: 'Produto', key: 'produto' },
     { header: 'Frequência', key: 'frequencia_producao' },
     { header: 'Época', key: 'epoca_producao' },
-    { 
-      header: 'Produção Esperada/Ano', 
+    {
+      header: 'Produção Esperada/Ano',
       key: 'producao_esperada_ano',
       type: 'number',
       unitSelector: { key: 'producao_unidade', options: ['kg', 'ton', 'L', 'potes'] }
@@ -83,7 +83,7 @@ function Secao2MUI({ data, onSectionChange }) {
       <Typography variant="body1" sx={{ mt: -2, mb: 1 }}>
         Detalhe as atividades produtivas orgânicas da propriedade.
       </Typography>
-          
+
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>2.1. Produção Primária Vegetal (PPV)</Typography>

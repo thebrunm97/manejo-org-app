@@ -3,6 +3,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
+import DebugErrorBoundary from './components/DebugErrorBoundary';
 
 // Layout
 import DashboardLayout from './components/DashboardLayout';
@@ -17,6 +18,8 @@ import DiarioDeCampo from './components/DiarioDeCampo';
 
 // 1. IMPORTAÇÃO DA NOVA PÁGINA DE LISTAGEM
 import PlanosManejoList from './pages/PlanosManejoList';
+import MapaPropriedade from './pages/MapaPropriedade';
+import MinhasCulturas from './pages/MinhasCulturas';
 
 function App() {
   return (
@@ -26,79 +29,115 @@ function App() {
       <Route path="/cadastro" element={<SignUpPage />} />
 
       {/* Rotas Protegidas - Agora usando DashboardLayout */}
-      
+
       {/* Rota 1: Dashboard Principal (Visão Geral) */}
-      <Route 
-        path="/" 
-        element={
-            <ProtectedRoute>
-                <DashboardLayout>
-                    <DashboardPageMUI />
-                </DashboardLayout>
-            </ProtectedRoute>
-        } 
-      />
-
-      {/* Rota 2: Listagem de Planos (NOVA ROTA) */}
-      <Route 
-        path="/planos" 
-        element={
-            <ProtectedRoute>
-                <DashboardLayout>
-                    <PlanosManejoList />
-                </DashboardLayout>
-            </ProtectedRoute>
-        } 
-      />
-
-      {/* Rota 3: Criar Novo Plano */}
-      <Route 
-        path="/pmo/novo" 
-        element={
-            <ProtectedRoute>
-                <DashboardLayout>
-                    <PmoFormPage />
-                </DashboardLayout>
-            </ProtectedRoute>
-        } 
-      />
-
-      {/* Rota 4: Editar Plano Existente */}
-      <Route 
-        path="/pmo/:pmoId/editar" 
-        element={
-            <ProtectedRoute>
-                <DashboardLayout>
-                    <PmoFormPage />
-                </DashboardLayout>
-            </ProtectedRoute>
-        } 
-      />
-
-      {/* Rota 5: Detalhes do Plano */}
-      <Route 
-        path="/pmo/:pmoId" 
-        element={
-            <ProtectedRoute>
-                <DashboardLayout>
-                    <PmoDetailPageMUI />
-                </DashboardLayout>
-            </ProtectedRoute>
-        } 
-      />
-      
-      {/* Rota 6: Caderno de Campo (Diário) */}
-      <Route 
-        path="/caderno" 
+      <Route
+        path="/"
         element={
           <ProtectedRoute>
             <DashboardLayout>
-              <DiarioDeCampo />
+              <DebugErrorBoundary name="DashboardPageMUI">
+                <DashboardPageMUI />
+              </DebugErrorBoundary>
             </DashboardLayout>
           </ProtectedRoute>
-        } 
+        }
       />
-      
+
+      {/* Rota 2: Listagem de Planos (NOVA ROTA) */}
+      <Route
+        path="/planos"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DebugErrorBoundary name="PlanosManejoList">
+                <PlanosManejoList />
+              </DebugErrorBoundary>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota Mapa */}
+      <Route
+        path="/mapa"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DebugErrorBoundary name="MapaPropriedade">
+                <MapaPropriedade />
+              </DebugErrorBoundary>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota 3: Criar Novo Plano */}
+      <Route
+        path="/pmo/novo"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <PmoFormPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota 4: Editar Plano Existente */}
+      <Route
+        path="/pmo/:pmoId/editar"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <PmoFormPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota 5: Detalhes do Plano */}
+      <Route
+        path="/pmo/:pmoId"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DebugErrorBoundary name="PmoDetailPageMUI">
+                <PmoDetailPageMUI />
+              </DebugErrorBoundary>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota 6: Caderno de Campo (Diário) */}
+      <Route
+        path="/caderno"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DebugErrorBoundary name="DiarioDeCampo">
+                <DiarioDeCampo />
+              </DebugErrorBoundary>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Rota 7: Minhas Culturas (Em Breve) */}
+      <Route
+        path="/culturas"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout>
+              <DebugErrorBoundary name="MinhasCulturas">
+                <MinhasCulturas />
+              </DebugErrorBoundary>
+            </DashboardLayout>
+          </ProtectedRoute>
+        }
+      />
+
       <Route path="*" element={<h2>Página não encontrada</h2>} />
     </Routes>
   );

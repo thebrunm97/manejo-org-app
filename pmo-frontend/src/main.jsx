@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// Force Reload
 import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';
 
@@ -12,8 +13,11 @@ import CssBaseline from '@mui/material/CssBaseline';
 // Import do Provedor de Autenticação
 import { AuthProvider } from './context/AuthContext';
 
+// Import do ErrorBoundary
+import ErrorBoundary from './components/ErrorBoundary';
+
 // --- NOVO: Importa o Tema Personalizado (Agro Moderno) ---
-import theme from './theme'; 
+import theme from './theme';
 
 // =======================================================
 // ||         INÍCIO DA LÓGICA DE REGISTRO DO SW          ||
@@ -37,14 +41,16 @@ if ('serviceWorker' in navigator) {
 // Renderização da aplicação
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider> 
-        {/* Aplica o novo tema importado de theme.js */}
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <App />
-        </ThemeProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          {/* Aplica o novo tema importado de theme.js */}
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <App />
+          </ThemeProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </React.StrictMode>
 );
