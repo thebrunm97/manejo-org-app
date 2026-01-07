@@ -245,6 +245,7 @@ const TalhaoDetailsDrawer: React.FC<TalhaoDetailsDrawerProps> = ({
             anchor="right"
             open={open}
             onClose={onClose}
+            sx={{ zIndex: (theme) => theme.zIndex.drawer + 2 }}
             PaperProps={{ sx: { width: { xs: '100%', md: 500 }, display: 'flex', flexDirection: 'column' } }}
         >
             {/* Header */}
