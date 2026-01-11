@@ -23,29 +23,7 @@ export function AuthProvider({ children }) {
     navigate('/login');
   }, [navigate]);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setAuthToken(session.access_token);
-        setUser(session.user);
-      }
-      setIsLoading(false);
-    };
-
-    checkUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setAuthToken(session?.access_token ?? null);
-        setUser(session?.user ?? null);
-      }
-    );
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
+  const DASHBOARD_PATH = '/';
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -53,7 +31,7 @@ export function AuthProvider({ children }) {
       password,
     });
     if (error) throw error;
-    navigate('/');
+    navigate(DASHBOARD_PATH);
     return data;
   };
 
@@ -75,10 +53,50 @@ export function AuthProvider({ children }) {
 
   const socialLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider, // 'google', 'facebook', etc.
+      provider: provider,
+      options: {
+        redirectTo: window.location.origin,
+      }
     });
     if (error) throw error;
   };
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setAuthToken(session.access_token);
+        setUser(session.user);
+      }
+      setIsLoading(false);
+    };
+
+    checkUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setAuthToken(session?.access_token ?? null);
+        setUser(session?.user ?? null);
+
+        if (event === 'SIGNED_IN' && session) {
+          // Verifica se há hash na URL (fluxo OAuth)
+          if (window.location.hash && window.location.hash.includes('access_token')) {
+            // Limpa o hash da URL para ficar "limpa"
+            window.history.replaceState(null, '', window.location.pathname);
+
+            // Redireciona para o dashboard se não estiver lá
+            if (window.location.pathname !== DASHBOARD_PATH) {
+              navigate(DASHBOARD_PATH, { replace: true });
+            }
+          }
+        }
+      }
+    );
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   // =======================================================
   // ||               FIM DAS NOVAS FUNÇÕES                 ||
