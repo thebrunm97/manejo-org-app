@@ -213,7 +213,7 @@ function DashboardPageMUI() {
                 display: 'flex',
                 flexDirection: { xs: 'column', md: 'row' },
                 justifyContent: 'space-between',
-                alignItems: { xs: 'flex-start', md: 'flex-end' },
+                alignItems: 'center',
                 gap: { xs: 2, md: 0 },
                 mb: 4
             }}>
@@ -271,7 +271,8 @@ function DashboardPageMUI() {
             <Grid container spacing={3} sx={{ mb: 4 }}>
 
                 {/* --- COLUNA ESQUERDA: CONTROLES --- */}
-                <Grid size={{ xs: 12, md: 4, lg: 3 }}>
+                {/* --- COLUNA ESQUERDA: CONTROLES --- */}
+                <Grid item xs={12} md={4} lg={3}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 
                         {/* 2.1 WIDGET: PLANO (AGORA O PRIMEIRO) */}
@@ -348,7 +349,8 @@ function DashboardPageMUI() {
                 </Grid>
 
                 {/* --- COLUNA DIREITA: PRINCIPAL --- */}
-                <Grid size={{ xs: 12, md: 8, lg: 9 }}>
+                {/* --- COLUNA DIREITA: PRINCIPAL --- */}
+                <Grid item xs={12} md={8} lg={9}>
                     <Paper sx={{ ...cardStyle, p: 3, minHeight: '100%' }}>
                         <HarvestDashboard
                             pmoId={profile?.pmo_ativo_id}
