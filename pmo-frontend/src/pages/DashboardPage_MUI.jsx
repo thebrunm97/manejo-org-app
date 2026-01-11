@@ -8,8 +8,8 @@ import {
     Box, Typography, Paper, Button, Chip, Grid, Skeleton
 } from '@mui/material';
 
-import HarvestDashboard from '../components/Dashboard/HarvestDashboard';
-import GeneralLogTable from '../components/Dashboard/GeneralLogTable';
+import HarvestDashboard from '../components/Dashboard/HarvestDashboard.tsx';
+import GeneralLogTable from '../components/Common/GeneralLogTable';
 
 import {
     Plus, MessageCircle, Settings, Smartphone, Edit,
@@ -191,6 +191,12 @@ function DashboardPageMUI() {
         return `${diffDays} dias atrás`;
     };
 
+    const handleActivityUpdate = (date) => {
+        if (date && (!lastMessageDate || new Date(date) > new Date(lastMessageDate))) {
+            setLastMessageDate(new Date(date));
+        }
+    };
+
     return (
         <Box sx={{ pb: 8, overflowX: 'hidden' }}>
 
@@ -344,7 +350,10 @@ function DashboardPageMUI() {
                 {/* --- COLUNA DIREITA: PRINCIPAL --- */}
                 <Grid size={{ xs: 12, md: 8, lg: 9 }}>
                     <Paper sx={{ ...cardStyle, p: 3, minHeight: '100%' }}>
-                        <HarvestDashboard pmoId={profile?.pmo_ativo_id} />
+                        <HarvestDashboard
+                            pmoId={profile?.pmo_ativo_id}
+                            onDataUpdate={handleActivityUpdate}
+                        />
                     </Paper>
                 </Grid>
 

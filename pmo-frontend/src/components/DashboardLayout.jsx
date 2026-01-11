@@ -24,7 +24,7 @@ const DashboardLayout = ({ children }) => {
           display: { md: 'none' },
           bgcolor: '#ffffff',
           borderBottom: '1px solid #e2e8f0',
-          color: '#0f172a',
+          color: '#1e293b', // Slate 800
           zIndex: (theme) => theme.zIndex.drawer + 1
         }}
       >

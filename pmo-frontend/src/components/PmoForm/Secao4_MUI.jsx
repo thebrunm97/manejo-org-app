@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import TabelaDinamicaMUI from './TabelaDinamica_MUI';
+import TabelaDinamicaMUI from './TabelaDinamica_MUI.tsx';
 
 // O subcomponente customizado continua aqui, mas vamos remover seu título interno depois
 const TabelaAnimaisSubsistencia = ({ itens, onItensChange }) => {

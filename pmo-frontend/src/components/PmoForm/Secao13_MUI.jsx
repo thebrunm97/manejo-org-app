@@ -12,7 +12,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckboxGroupMUI from './CheckboxGroup_MUI';
-import TabelaDinamicaMUI from './TabelaDinamica_MUI';
+import TabelaDinamicaMUI from './TabelaDinamica_MUI.tsx';
 
 // Subcomponente: Tabela de Nutrição Animal (13.5) - Sem alterações
 const TabelaNutricaoAnimalMUI = ({ data, onDataChange }) => {

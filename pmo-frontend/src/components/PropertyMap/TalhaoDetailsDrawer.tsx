@@ -176,7 +176,51 @@ const TalhaoDetailsDrawer: React.FC<TalhaoDetailsDrawerProps> = ({
     }, [talhao, isEditing]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        let newFormData = { ...formData, [name]: value };
+
+        // --- Lógica de Auto-Cálculo da Textura (Triangulação) ---
+        // Agora calcula REMOVENDO o excesso do terceiro elemento, mesmo se ele já existir.
+        if (['teor_argila', 'silte', 'areia'].includes(name)) {
+            const totalTarget = unitMode === 'percent' ? 100 : 1000;
+
+            const getVal = (k: string) => {
+                const raw = newFormData[k as keyof typeof newFormData];
+                if (raw === '' || raw === undefined) return NaN;
+                return parseFloat(String(raw).replace(',', '.')) || 0;
+            };
+
+            const argila = getVal('teor_argila');
+            const silte = getVal('silte');
+            const areia = getVal('areia');
+
+            const isVal = (n: number) => !isNaN(n);
+
+            if (name === 'teor_argila') {
+                // Mudou Argila: Ajusta Areia (se Silte existir), senão Ajusta Silte (se Areia existir)
+                if (isVal(silte)) {
+                    newFormData.areia = Math.max(0, totalTarget - argila - silte).toString().replace('.', ',');
+                } else if (isVal(areia)) {
+                    newFormData.silte = Math.max(0, totalTarget - argila - areia).toString().replace('.', ',');
+                }
+            } else if (name === 'silte') {
+                // Mudou Silte: Ajusta Areia (se Argila existir)
+                if (isVal(argila)) {
+                    newFormData.areia = Math.max(0, totalTarget - argila - silte).toString().replace('.', ',');
+                } else if (isVal(areia)) {
+                    newFormData.teor_argila = Math.max(0, totalTarget - silte - areia).toString().replace('.', ',');
+                }
+            } else if (name === 'areia') {
+                // Mudou Areia: Ajusta Silte (se Argila existir)
+                if (isVal(argila)) {
+                    newFormData.silte = Math.max(0, totalTarget - argila - areia).toString().replace('.', ',');
+                } else if (isVal(silte)) {
+                    newFormData.teor_argila = Math.max(0, totalTarget - silte - areia).toString().replace('.', ',');
+                }
+            }
+        }
+
+        setFormData(newFormData);
     };
 
     const handleSave = async () => {
@@ -185,7 +229,7 @@ const TalhaoDetailsDrawer: React.FC<TalhaoDetailsDrawerProps> = ({
         try {
             // Safe Number Parsing (Comma support)
             const parseNum = (val: any) => {
-                if (!val) return null;
+                if (!val && val !== 0) return null;
                 return parseFloat(String(val).replace(',', '.'));
             };
 
@@ -205,10 +249,12 @@ const TalhaoDetailsDrawer: React.FC<TalhaoDetailsDrawerProps> = ({
 
             setIsEditing(false);
             if (onUpdateStart) onUpdateStart();
+            setSnackbar({ open: true, message: "Dados salvos com sucesso!", severity: 'success' });
 
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            setSnackbar({ open: true, message: "Erro ao salvar dados.", severity: 'error' });
+            const msg = error.message || "Erro desconhecido ao salvar.";
+            setSnackbar({ open: true, message: `Erro ao salvar: ${msg}`, severity: 'error' });
         } finally {
             setSaving(false);
         }

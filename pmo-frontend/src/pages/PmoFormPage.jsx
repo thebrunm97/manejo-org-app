@@ -7,25 +7,28 @@ import { deepMerge } from '../utils/deepMerge';
 import * as validations from '../validation/pmoValidation';
 import { localDb } from '../utils/db';
 
-import { 
+import {
     Box, Typography, Alert, TextField, useTheme, useMediaQuery, MobileStepper,
-    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, 
-    Paper, Snackbar 
+    Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+    Paper, Snackbar, IconButton
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PrintIcon from '@mui/icons-material/Print'; // Import Icon
 
 // Componentes do Formulário
 import DesktopStepperMUI from '../components/PmoForm/DesktopStepper_MUI.jsx';
 import StepperNavigationMUI from '../components/PmoForm/StepperNavigation_MUI.jsx';
 import MobileBottomNav from '../components/PmoForm/MobileBottomNav.jsx';
 import SectionsModal from '../components/PmoForm/SectionsModal.jsx';
+import PmoParaImpressao from '../components/PmoForm/PmoParaImpressao'; // Import Print Component
+import { savePmoSection } from '../services/pmoService';
 
 // Importação do Caderno de Campo
 import DiarioDeCampo from '../components/DiarioDeCampo';
 
 // Seções do PMO
 import Secao1MUI from '../components/PmoForm/Secao1_MUI.jsx';
-import Secao2MUI from '../components/PmoForm/Secao2_MUI.jsx';
+import Secao2MUI from '../components/PmoForm/Secao2_MUI';
 import Secao3MUI from '../components/PmoForm/Secao3_MUI.jsx';
 import Secao4MUI from '../components/PmoForm/Secao4_MUI.jsx';
 import Secao5MUI from '../components/PmoForm/Secao5_MUI.jsx';
@@ -33,7 +36,7 @@ import Secao6MUI from '../components/PmoForm/Secao6_MUI.jsx';
 import Secao7MUI from '../components/PmoForm/Secao7_MUI.jsx';
 import Secao8MUI from '../components/PmoForm/Secao8_MUI.jsx';
 import Secao9MUI from '../components/PmoForm/Secao9_MUI.jsx';
-import Secao10MUI from '../components/PmoForm/Secao10_MUI.jsx';
+import Secao10MUI from '../components/PmoForm/Secao10_MUI';
 import Secao11MUI from '../components/PmoForm/Secao11_MUI.jsx';
 import Secao12MUI from '../components/PmoForm/Secao12_MUI.jsx';
 import Secao13MUI from '../components/PmoForm/Secao13_MUI.jsx';
@@ -138,10 +141,13 @@ function PmoFormPage() {
     const [isDirty, setIsDirty] = useState(false);
     const [isSectionsModalOpen, setSectionsModalOpen] = useState(false);
     const [isConfirmExitOpen, setConfirmExitOpen] = useState(false);
-    
+
+    // NOVO ESTADO: Controle de Impressão
+    const [isPrintMode, setIsPrintMode] = useState(false);
+
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    
+
     const formSections = useMemo(() => [
         { id: 1, key: 'secao_1_descricao_propriedade', Component: Secao1MUI, validate: validations.validateSecao1, label: 'Propriedade' },
         { id: 2, key: 'secao_2_atividades_produtivas_organicas', Component: Secao2MUI, validate: validations.validateSecao2, label: 'Atividades Orgânicas' },
@@ -198,7 +204,7 @@ function PmoFormPage() {
                 console.error(`Falha ao sincronizar o PMO ${update.id}:`, err);
             }
         }
-        
+
         setIsLoading(false);
         setSaveStatus(`Sincronização concluída!`);
         setTimeout(() => setSaveStatus(''), 5000);
@@ -255,6 +261,8 @@ function PmoFormPage() {
         fetchPmoData();
     }, [editablePmoId, syncOfflineData, navigate]);
 
+
+
     const handleSave = async (statusFinal = 'RASCUNHO') => {
         if (!nomeIdentificador) {
             setErrors({ global: 'O "Nome de Identificação do Plano" é obrigatório.' });
@@ -263,7 +271,7 @@ function PmoFormPage() {
 
         const cleanedData = cleanFormDataForSubmission(formData);
         const pmoIdToSave = editablePmoId || `offline_${Date.now()}`;
-        
+
         if (!editablePmoId && !navigator.onLine) {
             setEditablePmoId(pmoIdToSave);
         }
@@ -273,31 +281,87 @@ function PmoFormPage() {
         if (navigator.onLine) {
             setIsLoading(true);
             setSaveStatus('Salvando na nuvem...');
+
             try {
+                // 1. Salva o PMO Principal (JSONB)
                 const { id, ...supabasePayload } = payload;
+                let newPmoId = editablePmoId;
+
                 let result;
                 if (isEditMode && editablePmoId && !String(editablePmoId).startsWith('offline_')) {
                     result = await supabase.from('pmos').update(supabasePayload).eq('id', editablePmoId).select();
                 } else {
                     result = await supabase.from('pmos').insert(supabasePayload).select();
                     if (result.data?.[0]) {
-                        const newPmoId = result.data[0].id;
+                        newPmoId = result.data[0].id;
                         if (String(id).startsWith('offline_')) {
                             await localDb.delete(id);
                         }
-                        navigate(`/pmo/${newPmoId}/editar`, { replace: true });
-                        setEditablePmoId(newPmoId);
-                        setIsEditMode(true);
+                        // Navega apenas se for NOVO
+                        if (!editablePmoId) {
+                            navigate(`/pmo/${newPmoId}/editar`, { replace: true });
+                            setEditablePmoId(newPmoId);
+                            setIsEditMode(true);
+                        }
                     }
                 }
                 if (result.error) throw result.error;
-                setSaveStatus(statusFinal === 'RASCUNHO' ? 'Rascunho salvo!' : 'Plano finalizado!');
+
+                // 2. SPRINT 5: Salvar Seções Relacionais (se tiver ID válido)
+                // 2. SPRINT 5: Salvar Seções Relacionais (se tiver ID válido)
+                if (newPmoId && !String(newPmoId).startsWith('offline_')) {
+                    setSaveStatus('Sincronizando tabelas...');
+
+                    // --- A. tabela 'pmo_culturas' ---
+                    const culturasRaw = formData.secao_2_atividades_produtivas_organicas?.producao_primaria_vegetal?.produtos_primaria_vegetal || [];
+                    console.log('[handleSave] 2.A Culturas Raw:', culturasRaw);
+                    if (culturasRaw.length > 0) {
+                        const culturasPayload = culturasRaw.map(item => ({
+                            id: item.id || item._id, // Tenta IDs existentes
+                            pmo_id: newPmoId,
+                            produto: item.produto,
+                            variedade: item.variedade || null, // Se houver no futuro
+                            // Combina valor e unidade para campos de texto
+                            area_plantada: item.area_plantada ? `${item.area_plantada} ${item.area_plantada_unidade || ''}`.trim() : null,
+                            estimativa_colheita: item.producao_esperada_ano ? `${item.producao_esperada_ano} ${item.producao_unidade || ''}`.trim() : null,
+                            // Mapeia localizacao para JSONB
+                            localizacao: item.talhoes_canteiros ? { descricao: item.talhoes_canteiros } : null,
+                            status: 'ATIVO'
+                        }));
+
+                        // Passamos null no mapping pois já ajustamos as chaves
+                        await savePmoSection(newPmoId, 'pmo_culturas', culturasPayload, null);
+                    }
+
+                    // --- B. tabela 'pmo_manejo' ---
+                    const manejoRaw = formData.secao_8_insumos_equipamentos?.insumos_melhorar_fertilidade || [];
+                    console.log('[handleSave] 2.B Manejo Raw:', manejoRaw);
+                    if (manejoRaw.length > 0) {
+                        const manejoPayload = manejoRaw.map(item => ({
+                            id: item.id || item._id,
+                            pmo_id: newPmoId,
+                            insumo: item.produto_ou_manejo,
+                            fonte: item.procedencia,
+                            quantidade: item.dosagem,
+                            // 'quando' é texto livre, 'data_aplicacao' é DATE. Salvamos 'quando' em 'metodo_aplicacao' para evitar erro de tipo.
+                            metodo_aplicacao: item.quando,
+                            // 'onde' é texto, 'talhoes_aplicados' é JSONB.
+                            talhoes_aplicados: item.onde ? { local: item.onde } : null,
+                            data_aplicacao: null // Deixar null por enquanto pois não temos data estruturada
+                        }));
+
+                        await savePmoSection(newPmoId, 'pmo_manejo', manejoPayload, null);
+                    }
+                }
+
+                setSaveStatus(statusFinal === 'RASCUNHO' ? 'Rascunho salvo com sucesso!' : 'Plano finalizado!');
                 setIsDirty(false);
                 if (statusFinal !== 'RASCUNHO') setTimeout(() => navigate('/'), 2000);
             } catch (err) {
+                console.error("Erro ao salvar:", err);
                 setSaveStatus('Falha na nuvem. Salvando localmente...');
                 await localDb.set(payload);
-                setErrors({ global: `Falha na conexão. Dados salvos offline. (${err.message})` });
+                setErrors({ global: `Falha na conexão/integração. Dados salvos offline. (${err.message})` });
             } finally {
                 setIsLoading(false);
                 setTimeout(() => setSaveStatus(''), 3000);
@@ -337,37 +401,90 @@ function PmoFormPage() {
     };
 
     const handleCancelExit = () => setConfirmExitOpen(false);
-        
+
     const currentSectionConfig = formSections.find(sec => sec.id === currentStep);
 
-    if (isLoading) return <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh'}}><Typography>Carregando...</Typography></Box>;
+    // MODE DE IMPRESSÃO
+    if (isPrintMode) {
+        return <PmoParaImpressao dadosPmo={formData} onClose={() => setIsPrintMode(false)} />;
+    }
+
+    if (isLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Typography>Carregando...</Typography></Box>;
 
     return (
-        <Box 
+        <Box
             key={editablePmoId || 'new-pmo'}
             sx={{ maxWidth: '1200px', mx: 'auto', p: { xs: 1, sm: 2, md: 3 }, pb: { xs: '80px', md: 3 } }}
         >
-            <Button type="button" variant="text" startIcon={<ArrowBackIcon />} onClick={handleAttemptExit} sx={{ mb: 2, p: 1 }}>
-                Voltar ao Painel
-            </Button>
-
-            <Typography variant="h4" gutterBottom>
-                {isEditMode ? `Editando: ${nomeIdentificador || ''}` : 'Novo Plano de Manejo Orgânico'}
-            </Typography>
-
-            <TextField
-                required
-                fullWidth
-                label="Nome de Identificação do Plano"
-                value={nomeIdentificador}
-                onChange={(e) => {
-                    setNomeIdentificador(e.target.value);
-                    setIsDirty(true);
+            {/* HEADER FLAT (Sem Caixa) */}
+            <Box
+                sx={{
+                    p: 2,
+                    mb: 3,
+                    display: 'flex',
+                    flexDirection: { xs: 'column', md: 'row' },
+                    alignItems: { xs: 'flex-start', md: 'center' },
+                    gap: 3,
                 }}
-                sx={{ mb: 4 }}
-                variant="outlined"
-                helperText="Dê um nome ao seu plano para facilitar a identificação (ex: Sítio São José 2025)."
-            />
+            >
+                {/* 1. Botão Voltar (Minimalista) */}
+                <IconButton
+                    onClick={handleAttemptExit}
+                    sx={{
+                        color: '#64748b',
+                        p: 0,
+                        '&:hover': { color: '#0f172a', bgcolor: 'transparent' }
+                    }}
+                >
+                    <ArrowBackIcon fontSize="medium" />
+                </IconButton>
+
+                {/* 2. Títulos Flutuantes */}
+                <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="caption" sx={{ textTransform: 'uppercase', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.05em' }}>
+                        Planejamento
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#1e293b', mt: 0, letterSpacing: '-0.03em' }}>
+                        {isEditMode ? 'Editando Plano' : 'Novo Plano'}
+                    </Typography>
+                </Box>
+
+                {/* BOTÃO DE IMPRESSÃO */}
+                <Button
+                    startIcon={<PrintIcon />}
+                    variant="outlined"
+                    onClick={() => setIsPrintMode(true)}
+                    sx={{
+                        borderColor: '#e2e8f0',
+                        color: '#64748b',
+                        '&:hover': {
+                            borderColor: '#cbd5e1',
+                            bgcolor: '#f8fafc'
+                        }
+                    }}
+                >
+                    Visualizar Impressão
+                </Button>
+
+                {/* 3. Input de Identificação (O único com borda) */}
+                <Box sx={{ width: { xs: '100%', md: '350px' } }}>
+                    <TextField
+                        required
+                        fullWidth
+                        placeholder="Nome da Propriedade / Ano"
+                        label="Identificação"
+                        value={nomeIdentificador}
+                        onChange={(e) => {
+                            setNomeIdentificador(e.target.value);
+                            setIsDirty(true);
+                        }}
+                        variant="outlined"
+                        InputProps={{
+                            sx: { bgcolor: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }
+                        }}
+                    />
+                </Box>
+            </Box>
 
             <Box sx={{ width: '100%', mb: 4 }}>
                 {isMobile ? (
@@ -391,22 +508,22 @@ function PmoFormPage() {
             </Box>
 
             <div>
-                <form 
-                  onSubmit={(e) => { e.preventDefault(); handleSave('CONCLUÍDO'); }}
+                <form
+                    onSubmit={(e) => { e.preventDefault(); handleSave('CONCLUÍDO'); }}
                 >
                     {currentSectionConfig && (
-                        <currentSectionConfig.Component 
-                            key={currentSectionConfig.key} 
-                            data={formData[currentSectionConfig.key]} 
-                            formData={formData} 
-                            onSectionChange={(newData) => handleSectionChange(currentSectionConfig.key, newData)} 
+                        <currentSectionConfig.Component
+                            key={currentSectionConfig.key}
+                            data={formData[currentSectionConfig.key]}
+                            formData={formData}
+                            onSectionChange={(newData) => handleSectionChange(currentSectionConfig.key, newData)}
                             errors={errors[currentSectionConfig.key]}
                             pmoId={editablePmoId} // Passando ID para o Caderno
                         />
                     )}
-                    
+
                     {errors.global && <Alert severity="error" sx={{ mt: 2 }}>{errors.global}</Alert>}
-                    
+
                     {!isMobile && (
                         <StepperNavigationMUI
                             currentStep={currentStep} totalSteps={totalSteps} isLoading={isLoading} saveStatus={saveStatus}

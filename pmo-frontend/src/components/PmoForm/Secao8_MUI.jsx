@@ -5,7 +5,7 @@ import {
   Accordion, AccordionDetails, AccordionSummary, Box, TextField, Typography
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import TabelaDinamicaMUI from './TabelaDinamica_MUI';
+import TabelaDinamicaMUI from './TabelaDinamica_MUI.tsx';
 
 function Secao8MUI({ data, formData, onSectionChange }) {
   const insumosFertilidade = formData?.insumos_melhorar_fertilidade || [];

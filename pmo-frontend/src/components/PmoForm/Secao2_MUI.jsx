@@ -5,7 +5,7 @@ import {
   Accordion, AccordionDetails, AccordionSummary, Box, Typography
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import TabelaDinamicaMUI from './TabelaDinamica_MUI';
+import TabelaDinamicaMUI from './TabelaDinamica_MUI.tsx'; // Updated import
 
 function Secao2MUI({ data, onSectionChange }) {
   const safeData = data || {};
@@ -43,7 +43,7 @@ function Secao2MUI({ data, onSectionChange }) {
       header: 'Produção Esperada/Ano',
       key: 'producao_esperada_ano',
       type: 'number',
-      unitSelector: { key: 'producao_unidade', options: ['kg', 'ton', 'cx'] }
+      unitSelector: { key: 'producao_unidade', options: ['kg', 'ton', 'cx', 'maço', 'unid'] }
     }
   ];
 

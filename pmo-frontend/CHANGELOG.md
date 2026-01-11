@@ -10,6 +10,15 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Adicionado
 - Criação do arquivo CHANGELOG.md para rastreamento de mudanças.
 
+## [Sprint 4] - 2026-01-07
+
+### ✨ Funcionalidades
+- **Relatório de Impressão do PMO**: Novo módulo para geração de Relatório Técnico em formato A4/PDF.
+  - Implementado componente `PmoParaImpressao.jsx` com estilos de alto contraste e layout de documentos oficiais.
+  - Adicionado botão "Visualizar Impressão" na barra de ferramentas do formulário (`PmoFormPage.jsx`).
+  - Ocultamento automático de elementos de UI (Sidebar, Botões) durante a impressão através de CSS `@media print`.
+  - Agrupamento inteligente de culturas e produtos na listagem do relatório.
+
 ## [v0.13.1] - 2026-01-06
 
 ### ✨ Melhorias de UX/UI (Mobile First)

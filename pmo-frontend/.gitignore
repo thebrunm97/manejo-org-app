@@ -22,5 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
+db.sqlite3
+*.pyc
+__pycache__/
+_BACKUPS/
+pmo_bot/
+pmo-frontend.rar
+.env
 

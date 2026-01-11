@@ -55,7 +55,7 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
   const drawerContent = (
     <>
       {/* 1. Logo */}
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #1e293b' }}>
+      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <Box sx={{
           width: 35,
           height: 35,
@@ -66,11 +66,11 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
           justifyContent: 'center',
           color: 'white',
           fontWeight: 'bold',
-          boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)'
+          boxShadow: '0 0 15px rgba(22, 163, 74, 0.4)' // Glow tech
         }}>
           AV
         </Box>
-        <Typography variant="h6" sx={{ color: 'white', fontWeight: 700, letterSpacing: '-0.5px' }}>
+        <Typography variant="h6" sx={{ color: '#f8fafc', fontWeight: 700, letterSpacing: '-0.5px' }}>
           AgroVivo
         </Typography>
       </Box>
@@ -84,7 +84,7 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
         scrollbarWidth: 'none',  // Firefox
         '&::-webkit-scrollbar': { display: 'none' } // Chrome/Safari
       }}>
-        <Typography variant="caption" sx={{ ml: 3, mb: 1, display: 'block', fontWeight: 600, color: '#475569' }}>
+        <Typography variant="caption" sx={{ ml: 3, mb: 1, display: 'block', fontWeight: 600, color: '#94a3b8' }}>
           GESTÃO
         </Typography>
         <List>
@@ -95,21 +95,28 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
                 <ListItemButton
                   onClick={() => handleNavigate(item.path)}
                   sx={{
-                    borderRadius: 2,
-                    bgcolor: active ? 'rgba(22, 163, 74, 0.15)' : 'transparent',
-                    color: active ? '#4ade80' : 'inherit',
+                    borderRadius: '6px', // Slightly more rounded for buttons
+                    mb: 0.5,
+                    borderLeft: active ? '3px solid #4ade80' : '3px solid transparent', // Neon indicator
+                    bgcolor: active ? 'rgba(21, 128, 61, 0.15) !important' : 'transparent',
+                    color: active ? '#ffffff' : '#f1f5f9', // White active, Slate-100 inactive
                     '&:hover': {
-                      bgcolor: active ? 'rgba(22, 163, 74, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                      color: active ? '#4ade80' : 'white',
-                    }
+                      bgcolor: 'rgba(255, 255, 255, 0.05)',
+                      '& .MuiListItemIcon-root': { color: '#ffffff' }
+                    },
+                    transition: 'all 0.2s ease-in-out'
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  <ListItemIcon sx={{ minWidth: 40, color: active ? '#4ade80' : '#94a3b8' }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText
                     primary={item.name}
-                    primaryTypographyProps={{ fontSize: '0.9rem', fontWeight: active ? 600 : 400 }}
+                    primaryTypographyProps={{
+                      fontSize: '0.9rem',
+                      fontWeight: active ? 600 : 400,
+                      color: 'inherit' // Garante que herda do ListItemButton
+                    }}
                   />
                 </ListItemButton>
               </ListItem>
@@ -119,15 +126,16 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
       </Box>
 
       {/* 3. Rodapé */}
-      <Box sx={{ p: 2, borderTop: '1px solid #1e293b' }}>
+      <Box sx={{ p: 2, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <List>
           <ListItem disablePadding>
             <ListItemButton
               onClick={handleLogout}
               sx={{
-                borderRadius: 2,
+                borderRadius: '6px',
                 color: '#94a3b8',
-                '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.1)' }
+                '&:hover': { color: '#ef4444', bgcolor: 'rgba(239, 68, 68, 0.1)' },
+                transition: 'all 0.2s'
               }}
             >
               <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}><LogOut size={20} /></ListItemIcon>
@@ -144,7 +152,7 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
             <Typography variant="subtitle2" sx={{ color: 'white', lineHeight: 1.2 }}>
               {user?.email?.split('@')[0]}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b' }}>
+            <Typography variant="caption" sx={{ color: '#cbd5e1' }}>
               Plano Premium
             </Typography>
           </Box>
@@ -169,8 +177,9 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: drawerWidth,
-            backgroundColor: '#0f172a',
-            color: '#94a3b8'
+            backgroundColor: '#1e293b', // Slate 800
+            color: '#f8fafc', // Slate 50
+            borderRight: '1px solid rgba(255,255,255,0.1)'
           },
         }}
       >
@@ -185,9 +194,9 @@ const Sidebar = ({ mobileOpen = false, onClose }: SidebarProps) => {
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: drawerWidth,
-            backgroundColor: '#0f172a',
-            color: '#94a3b8',
-            borderRight: '1px solid #1e293b'
+            backgroundColor: '#1e293b', // Slate 800
+            color: '#f8fafc', // Slate 50
+            borderRight: '1px solid rgba(255,255,255,0.1)'
           },
         }}
         open

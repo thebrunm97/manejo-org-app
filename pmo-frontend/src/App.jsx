@@ -20,10 +20,14 @@ import DiarioDeCampo from './components/DiarioDeCampo';
 import PlanosManejoList from './pages/PlanosManejoList';
 import MapaPropriedade from './pages/MapaPropriedade';
 import MinhasCulturas from './pages/MinhasCulturas';
+import DesignLab from './pages/DesignLab';
 
 function App() {
   return (
     <Routes>
+      {/* Rota de Debug (Visibilidade) */}
+      <Route path="/lab" element={<DesignLab />} />
+
       {/* Rotas Públicas */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/cadastro" element={<SignUpPage />} />

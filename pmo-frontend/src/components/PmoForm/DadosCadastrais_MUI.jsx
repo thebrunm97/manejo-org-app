@@ -1,11 +1,11 @@
-// src/components/PmoForm/DadosCadastrais_MUI.jsx (Versão Final com Grid Layout)
-
 import React from 'react';
-import { Grid, TextField, Typography } from '@mui/material';
+import { Grid, Typography } from '@mui/material';
+import DebouncedTextField from '../Common/DebouncedTextField';
 
 function DadosCadastraisMUI({ data, onDataChange, errors }) {
-  const handleChange = (e) => {
-    onDataChange({ ...data, [e.target.name]: e.target.value });
+  // Agora handleChange recebe (name, value) diretamente do DebouncedTextField
+  const handleChange = (name, value) => {
+    onDataChange({ ...data, [name]: value });
   };
 
   const safeData = data || {};
@@ -26,7 +26,7 @@ function DadosCadastraisMUI({ data, onDataChange, errors }) {
       <Typography variant="h6" component="h2" gutterBottom>
         1.1 Dados Cadastrais
       </Typography>
-      
+
       {/* ============================================================== */}
       {/* ||  A CORREÇÃO ESTÁ AQUI: ADICIONANDO O GRID CONTAINER        || */}
       {/* ============================================================== */}
@@ -34,12 +34,12 @@ function DadosCadastraisMUI({ data, onDataChange, errors }) {
         {fields.map((field) => (
           // Cada TextField agora está dentro de um Grid item, que age como uma coluna.
           // sm={6} faz com que ocupe 50% da largura em telas de tablet ou maiores.
-          <Grid size={{ xs: 12, sm: 6 }} key={field.name}> 
-            <TextField
+          <Grid size={{ xs: 12, sm: 6 }} key={field.name}>
+            <DebouncedTextField
               name={field.name}
               label={field.label}
               value={safeData[field.name] || ''}
-              onChange={handleChange}
+              onChange={(val) => handleChange(field.name, val)} // Passa valor direto
               error={!!safeErrors[field.name]}
               helperText={safeErrors[field.name] || ' '}
               type={field.type || 'text'}

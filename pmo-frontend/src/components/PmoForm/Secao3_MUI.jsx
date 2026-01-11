@@ -8,7 +8,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-import TabelaDinamicaMUI from './TabelaDinamica_MUI';
+import TabelaDinamicaMUI from './TabelaDinamica_MUI.tsx'; // Updated import
 
 function Secao3MUI({ data, onSectionChange }) {
   const safeData = data || {};
@@ -79,7 +79,7 @@ function Secao3MUI({ data, onSectionChange }) {
         {safeData.produtos_nao_certificados && (
           // Usamos um Box para dar espaçamento entre os Accordions
           <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            
+
             {/* <<< TAREFA 2: Cada tabela agora é um Accordion >>> */}
             <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -89,7 +89,7 @@ function Secao3MUI({ data, onSectionChange }) {
                 <TabelaDinamicaMUI columns={columnsVegetal} data={safeData.producao_primaria_vegetal_nao_organica?.produtos_primaria_vegetal_nao_organica} onDataChange={(newData) => handleArrayChange('producao_primaria_vegetal_nao_organica', 'produtos_primaria_vegetal_nao_organica', newData)} itemName="Produto Não Orgânico" itemNoun="o" />
               </AccordionDetails>
             </Accordion>
-            
+
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography sx={{ fontWeight: 'bold' }}>3.2. Produção Primária Animal Não Orgânica</Typography>
@@ -98,7 +98,7 @@ function Secao3MUI({ data, onSectionChange }) {
                 <TabelaDinamicaMUI columns={columnsAnimal} data={safeData.producao_primaria_animal_nao_organica?.animais_primaria_animal_nao_organica} onDataChange={(newData) => handleArrayChange('producao_primaria_animal_nao_organica', 'animais_primaria_animal_nao_organica', newData)} itemName="Animal Não Orgânico" itemNoun="o" />
               </AccordionDetails>
             </Accordion>
-            
+
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                 <Typography sx={{ fontWeight: 'bold' }}>3.3. Processamento de Produtos de Origem Vegetal Não Orgânico</Typography>

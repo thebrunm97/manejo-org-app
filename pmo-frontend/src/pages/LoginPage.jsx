@@ -4,11 +4,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Avatar, Box, Button, Container, Grid, Link, TextField, Typography, Divider, CircularProgress, Alert
+  Avatar, Box, Button, Container, Grid, Link, TextField, Typography, Divider, CircularProgress, Alert, IconButton
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import GoogleIcon from '@mui/icons-material/Google';
 import FacebookIcon from '@mui/icons-material/Facebook';
+import ScienceIcon from '@mui/icons-material/Science';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
@@ -30,7 +31,7 @@ function LoginPage() {
       setLoading(false);
     }
   };
-  
+
   const handleSocialLogin = async (provider) => {
     try {
       setError('');
@@ -93,7 +94,7 @@ function LoginPage() {
           >
             {loading ? <CircularProgress size={24} /> : 'Entrar'}
           </Button>
-          
+
           <Divider sx={{ my: 2 }}>OU</Divider>
 
           <Button
@@ -113,7 +114,7 @@ function LoginPage() {
           >
             Entrar com Facebook
           </Button>
-          
+
           <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
             <Grid>
               <Link href="/cadastro" variant="body2">
@@ -123,7 +124,18 @@ function LoginPage() {
           </Grid>
         </Box>
       </Box>
-    </Container>
+
+      {/* Botão de Laboratório (Acesso Secreto) */}
+      <Box sx={{ position: 'fixed', bottom: 16, right: 16 }}>
+        <IconButton
+          onClick={() => navigate('/lab')}
+          title="Ir para Lab de Design"
+          sx={{ color: 'rgba(0,0,0,0.2)', '&:hover': { color: '#2E7D32', bgcolor: 'rgba(46, 125, 50, 0.1)' } }}
+        >
+          <ScienceIcon />
+        </IconButton>
+      </Box>
+    </Container >
   );
 }
 

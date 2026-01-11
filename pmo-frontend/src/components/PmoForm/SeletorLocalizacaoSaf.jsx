@@ -25,7 +25,7 @@ import { locationService } from '../../services/locationService';
 // Ícone wrapper simples
 const LinearScaleIconWrapper = () => <LinearIcon sx={{ fontSize: '0.9rem', mr: 0.5, verticalAlign: 'middle' }} />;
 
-const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = false, helperText = '' }) => {
+const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = false, helperText = '' }) => { // HMR Force Update
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -50,6 +50,7 @@ const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = fals
     const [loadingTalhoes, setLoadingTalhoes] = useState(false);
     const [loadingCanteiros, setLoadingCanteiros] = useState(false);
     const [busca, setBusca] = useState('');
+    const [filterType, setFilterType] = useState('todos'); // 'todos' | 'canteiro' | 'entrelinha' | 'tanque'
 
     // Creation Form State
     const [formLocal, setFormLocal] = useState({
@@ -105,14 +106,30 @@ const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = fals
 
     const canteirosFiltrados = useMemo(() => {
         if (!canteiros) return [];
-        let lista = canteiros;
+        let lista = [...canteiros]; // Copy to avoid mutating
+
+        // 1. Filter by Name (Search)
         if (busca) {
             lista = lista.filter(l => l.nome && l.nome.toLowerCase().includes(busca.toLowerCase()));
         }
 
+        // 2. Filter by Type (Case Insensitive)
+        if (filterType !== 'todos') {
+            lista = lista.filter(l => (l.tipo || '').toLowerCase() === filterType.toLowerCase());
+        }
+
+        // DEBUG: Log unique types to help diagnosis
+        const typesFound = [...new Set(lista.map(l => l.tipo))];
+        console.log('[SeletorLocalizacaoSaf] Types found in filtered list:', typesFound);
+
+        // 3. Sort Alphabetically (Natural Sort)
+        lista.sort((a, b) => {
+            const nameA = a.nome || '';
+            const nameB = b.nome || '';
+            return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
         // Deduplicação Visual / Tratamento de nomes iguais
-        // Se houver nomes repetidos, apenas o primeiro é mostrado (ou poderíamos adicionar sufixo)
-        // A estratégia aqui será identificar duplicatas e adicionar (#ID) se necessário para distinguir.
         const nameCounts = {};
         lista.forEach(item => {
             nameCounts[item.nome] = (nameCounts[item.nome] || 0) + 1;
@@ -125,7 +142,7 @@ const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = fals
             return { ...item, _displayName: item.nome };
         });
 
-    }, [canteiros, busca]);
+    }, [canteiros, busca, filterType]);
 
     // --- HANDLERS ---
 
@@ -196,7 +213,8 @@ const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = fals
     // --- RENDER HELPERS ---
 
     const getIcon = (tipo) => {
-        switch (tipo) {
+        const t = (tipo || '').toLowerCase();
+        switch (t) {
             case 'canteiro': return <GrassIcon />;
             case 'entrelinha': return <TreeIcon />;
             case 'tanque': return <WaterIcon />;
@@ -205,7 +223,8 @@ const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = fals
     };
 
     const getColors = (tipo) => {
-        switch (tipo) {
+        const t = (tipo || '').toLowerCase();
+        switch (t) {
             case 'canteiro': return { bg: '#dcfce7', color: '#16a34a' };
             case 'entrelinha': return { bg: '#fef3c7', color: '#d97706' };
             case 'tanque': return { bg: '#dbeafe', color: '#2563eb' };
@@ -287,6 +306,21 @@ const SeletorLocalizacaoSaf = ({ value, onChange, multiple = false, error = fals
                                             variant={selectedTalhaoId === talhao.id ? 'filled' : 'outlined'}
                                             clickable
                                             sx={{ fontWeight: 600 }}
+                                        />
+                                    ))}
+                                </Box>
+
+                                {/* --- FILTROS DE TIPO (Canteiro, Linha, Tanque) --- */}
+                                <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                                    {['todos', 'canteiro', 'entrelinha', 'tanque'].map((t) => (
+                                        <Chip
+                                            key={t}
+                                            label={t === 'todos' ? 'Todos' : t.charAt(0).toUpperCase() + t.slice(1)}
+                                            size="small"
+                                            color={filterType === t ? 'secondary' : 'default'}
+                                            variant={filterType === t ? 'filled' : 'outlined'}
+                                            onClick={() => setFilterType(t)}
+                                            clickable
                                         />
                                     ))}
                                 </Box>
