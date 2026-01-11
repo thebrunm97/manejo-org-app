@@ -14,7 +14,7 @@ import PmoFormPage from './pages/PmoFormPage';
 import PmoDetailPageMUI from './pages/PmoDetailPage_MUI';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
-import DiarioDeCampo from './components/DiarioDeCampo';
+import DiarioDeCampo from './components/DiarioDeCampo.tsx';
 
 // 1. IMPORTAÇÃO DA NOVA PÁGINA DE LISTAGEM
 import PlanosManejoList from './pages/PlanosManejoList';
